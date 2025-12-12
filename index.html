@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Money - Personal Finance Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Kanit', sans-serif;
+            background-color: #F0F3F7; /* Light Blue-Gray background */
+        }
+        .apple-card {
+            background-color: #FFFFFF;
+            border-radius: 16px;
+            /* Enhanced Shadow for premium feel */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04); 
+            border: 1px solid #EAEAEA; 
+            transition: all 0.3s;
+        }
+        /* Deep Purple Gradient (Purer, Richer Purple) */
+        .purple-gradient {
+            background: linear-gradient(145deg, #4F46E5 0%, #6366F1 50%, #818CF8 100%); /* Indigo -> Violet -> Light Blue-Violet */
+            box-shadow: 0 10px 20px rgba(79, 70, 229, 0.4);
+        }
+        /* Style for the active filter button */
+        .filter-btn-active {
+            background-color: #4338CA; /* Darker Indigo */
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 4px 6px rgba(67, 56, 202, 0.3);
+        }
+        /* Accent Color: Bright Teal/Cyan for key numbers */
+        .accent-color {
+            color: #20C997; /* Bright Green-Teal */
+        }
+        .progress-color {
+            background-color: #20C997; /* Bright Green-Teal for progress */
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="flex justify-center p-8 min-h-screen">
+
+    <div class="w-full max-w-6xl">
+        
+        <header class="mb-8">
+            <h1 class="text-4xl font-extrabold text-gray-800 tracking-tight">💰 My Money</h1>
+            <p class="text-gray-500 mt-1">บันทึกการเงินส่วนตัว และดูข้อมูลย้อนหลัง</p>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <div class="lg:col-span-1 space-y-8">
+                
+                <div class="apple-card p-6 purple-gradient text-white">
+                    <h2 class="text-lg font-medium opacity-80 mb-2">ยอดเงินคงเหลือทั้งหมด</h2>
+                    <p class="text-5xl font-extrabold tracking-tight mb-6 accent-color" id="global-balance">฿0.00</p>
+                    
+                    <div class="pt-4 border-t border-white/20 mb-6">
+                        <h3 class="text-base font-medium opacity-90 mb-2">เป้าหมายเงินเก็บ</h3>
+                        <p class="text-sm font-medium flex justify-between items-center mb-1">
+                            <span id="goal-status-text" class="text-sm text-white/70">ยอดเงินปัจจุบัน: ฿0.00</span>
+                            <span class="font-extrabold text-xl accent-color" id="goal-progress-percent">0%</span>
+                        </p>
+                        
+                        <div class="w-full bg-white/20 rounded-full h-2.5">
+                            <div id="goal-progress-bar" class="h-2.5 rounded-full progress-color" style="width: 0%; transition: width 1s ease-in-out;"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-6 pt-4 border-t border-white/20">
+                        <div class="flex">
+                            <input type="number" id="target-goal-input" min="1" step="100" class="w-full p-3 border-0 rounded-l-lg text-gray-800 font-semibold focus:ring-2 focus:ring-green-400" placeholder="ตั้งเป้าหมาย (100,000)" required>
+                            <button type="button" id="set-goal-btn" class="bg-indigo-700 text-white font-semibold py-3 px-4 rounded-r-lg hover:bg-indigo-600 transition-colors active:scale-[0.98]">ตั้งค่า</button>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 space-y-2 text-sm pt-4 border-t border-white/20">
+                        <div class="flex justify-between items-center">
+                            <span>รายรับทั้งหมด</span>
+                            <span class="font-semibold text-green-300" id="global-income">+฿0.00</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span>รายจ่ายทั้งหมด</span>
+                            <span class="font-semibold text-red-300" id="global-expense">-฿0.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="apple-card p-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-5">เพิ่มรายการใหม่</h2>
+                    
+                    <form id="form">
+                         <div class="grid grid-cols-2 gap-2 p-1 bg-gray-100 rounded-lg mb-4">
+                            <button type="button" id="btn-income" class="apple-button flex items-center justify-center gap-1 py-2 rounded-md font-medium text-sm transition-all duration-200 text-gray-600 active:scale-[0.98]">
+                                <span class="text-green-500 font-bold text-lg">+</span> <span class="font-semibold">รายรับ</span>
+                            </button>
+                            <button type="button" id="btn-expense" class="apple-button flex items-center justify-center gap-1 py-2 rounded-md font-medium text-sm transition-all duration-200 bg-red-600 text-white shadow-md shadow-red-300/60 active:scale-[0.98]">
+                                <span class="text-white font-bold text-lg">-</span> <span class="font-semibold">รายจ่าย</span>
+                            </button>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="block text-sm font-semibold text-gray-600 mb-1">ชื่อรายการ</label>
+                            <input type="text" id="text" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-700 font-normal" placeholder="เช่น ค่าอาหาร, เงินเดือน" required>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="block text-sm font-semibold text-gray-600 mb-1">จำนวนเงิน (บาท)</label>
+                            <input type="number" id="amount" min="0" step="0.01" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-800 font-semibold" placeholder="0.00" required>
+                        </div>
+
+                        <button type="submit" class="w-full apple-button purple-gradient hover:opacity-90 text-white font-semibold py-3 rounded-lg shadow-lg shadow-indigo-500/40 active:scale-[0.98]">
+                            บันทึกรายการ
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="lg:col-span-2 space-y-8">
+                
+                <div class="apple-card p-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">เลือกช่วงเวลาที่ต้องการดู</h2>
+                    
+                    <div class="flex items-center space-x-4 mb-5">
+                         <div class="flex bg-gray-100 rounded-lg p-1 text-sm font-medium">
+                            <button type="button" id="filter-monthly" data-filter="month" class="p-2 rounded-lg text-gray-600 transition duration-200 hover:bg-white active:scale-[0.98]">รายเดือน</button>
+                            <button type="button" id="filter-daily" data-filter="day" class="p-2 rounded-lg text-gray-600 transition duration-200 hover:bg-white active:scale-[0.98] filter-btn-active">รายวัน</button>
+                        </div>
+                    </div>
+
+                    <div class="flex space-x-3 items-center">
+                        <div id="date-filter-group" class="transition-all duration-300">
+                             <input type="date" id="date-filter" class="p-2 border border-gray-300 rounded-lg text-base text-gray-700 bg-white focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        
+                        <div id="monthly-filter-group" class="flex space-x-3 transition-all duration-300 hidden">
+                             <select id="month-filter" class="p-2 border border-gray-300 rounded-lg text-base text-gray-700 bg-white focus:ring-indigo-500 focus:border-indigo-500">
+                                </select>
+                            <select id="year-filter" class="p-2 border border-gray-300 rounded-lg text-base text-gray-700 bg-white focus:ring-indigo-500 focus:border-indigo-500">
+                                </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="apple-card p-6">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4" id="filtered-title">สรุปยอดของวันนี้</h3>
+                    
+                    <div class="flex justify-between p-4 bg-indigo-500 rounded-lg mb-6 text-white text-base font-medium shadow-md shadow-indigo-300/50">
+                        <div class="opacity-80">ยอดคงเหลือ:</div>
+                        <div class="font-bold text-xl accent-color" id="filtered-balance">฿0.00</div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 text-center">
+                        <div class="p-3 apple-card border-green-300/50 border">
+                            <p class="text-sm text-gray-500">รายรับ</p>
+                            <p class="text-2xl font-bold text-green-600 mt-1" id="filtered-income">+฿0.00</p>
+                        </div>
+                        <div class="p-3 apple-card border-red-300/50 border">
+                            <p class="text-sm text-gray-500">รายจ่าย</p>
+                            <p class="text-2xl font-bold text-red-600 mt-1" id="filtered-expense">-฿0.00</p>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="apple-card p-6">
+                    <h3 class="font-semibold text-gray-700 mb-4">รายการธุรกรรม</h3>
+                    <ul id="list" class="space-y-3 max-h-[400px] overflow-y-auto no-scrollbar pr-2">
+                        </ul>
+                     <div id="empty-msg" class="text-center flex flex-col items-center justify-center py-10 opacity-50">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-gray-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
+                        <p class="text-gray-500 text-sm">ไม่มีรายการในช่วงเวลานี้</p>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        // --- STATE & DATA ---
+        let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+        let targetGoal = parseFloat(localStorage.getItem('targetGoal')) || 0;
+        let currentType = 'expense';
+        let filterMode = 'day';
+        
+        const now = new Date();
+        
+        const pad = (num) => num.toString().padStart(2, '0');
+        const defaultDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+
+        let currentDate = defaultDate; 
+        let currentMonth = now.getMonth(); 
+        let currentYear = now.getFullYear();
+
+        // --- DOM ELEMENTS ---
+        const globalBalanceEl = document.getElementById('global-balance');
+        const globalIncomeEl = document.getElementById('global-income');
+        const globalExpenseEl = document.getElementById('global-expense');
+        const filteredBalanceEl = document.getElementById('filtered-balance');
+        const filteredIncomeEl = document.getElementById('filtered-income');
+        const filteredExpenseEl = document.getElementById('filtered-expense');
+        const filteredTitleEl = document.getElementById('filtered-title');
+        const listEl = document.getElementById('list');
+        const formEl = document.getElementById('form');
+        const textInput = document.getElementById('text');
+        const amountInput = document.getElementById('amount');
+        const emptyMsgEl = document.getElementById('empty-msg');
+        const btnIncome = document.getElementById('btn-income');
+        const btnExpense = document.getElementById('btn-expense');
+        
+        const dateFilter = document.getElementById('date-filter');
+        const monthFilter = document.getElementById('month-filter');
+        const yearFilter = document.getElementById('year-filter');
+        const dateFilterGroup = document.getElementById('date-filter-group');
+        const monthlyFilterGroup = document.getElementById('monthly-filter-group');
+        const filterMonthlyBtn = document.getElementById('filter-monthly');
+        const filterDailyBtn = document.getElementById('filter-daily');
+
+        // Goal Elements
+        const targetGoalInput = document.getElementById('target-goal-input');
+        const setGoalBtn = document.getElementById('set-goal-btn');
+        const goalStatusText = document.getElementById('goal-status-text');
+        const goalProgressPercent = document.getElementById('goal-progress-percent');
+        const goalProgressBar = document.getElementById('goal-progress-bar');
+        
+        // --- CONSTANTS ---
+        const monthNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+        const formatCurrency = (num) => `${num.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+        // --- EVENT LISTENERS ---
+        btnIncome.addEventListener('click', () => setTransactionType('income'));
+        btnExpense.addEventListener('click', () => setTransactionType('expense'));
+        formEl.addEventListener('submit', addTransaction);
+        setGoalBtn.addEventListener('click', setGoal);
+        
+        dateFilter.addEventListener('change', (e) => {
+            currentDate = e.target.value;
+            filterAndDisplayTransactions();
+        });
+
+        monthFilter.addEventListener('change', (e) => {
+            currentMonth = parseInt(e.target.value);
+            filterAndDisplayTransactions();
+        });
+        yearFilter.addEventListener('change', (e) => {
+            currentYear = parseInt(e.target.value);
+            filterAndDisplayTransactions();
+        });
+
+        filterMonthlyBtn.addEventListener('click', () => setFilterMode('month'));
+        filterDailyBtn.addEventListener('click', () => setFilterMode('day'));
+        
+
+        // --- CORE FUNCTIONS ---
+        
+        // Set Savings Goal
+        function setGoal() {
+            const newGoal = parseFloat(targetGoalInput.value);
+            if (isNaN(newGoal) || newGoal <= 0) {
+                alert('กรุณาใส่เป้าหมายที่ถูกต้อง (ต้องมากกว่า 0)');
+                return;
+            }
+            targetGoal = newGoal;
+            localStorage.setItem('targetGoal', targetGoal);
+            targetGoalInput.value = ''; 
+            updateGoalProgress();
+            targetGoalInput.placeholder = formatCurrency(targetGoal);
+            alert(`ตั้งค่าเป้าหมายสำเร็จ: ฿${formatCurrency(targetGoal)}`);
+        }
+
+        // Update Goal Progress UI
+        function updateGoalProgress() {
+            const globalBalance = transactions.map(t => t.amount).reduce((acc, item) => (acc += item), 0);
+            
+            // 1. Update Goal Text & Input Placeholder
+            globalBalanceEl.innerText = `฿${formatCurrency(globalBalance)}`;
+
+            if (targetGoal > 0) {
+                goalStatusText.innerHTML = `ยอดเงินปัจจุบัน: ฿${formatCurrency(globalBalance)} <span class="text-white/60">/ เป้าหมาย: ฿${formatCurrency(targetGoal)}</span>`;
+                targetGoalInput.placeholder = formatCurrency(targetGoal);
+            } else {
+                goalStatusText.innerText = 'กรุณาตั้งเป้าหมายเงินเก็บ';
+                targetGoalInput.placeholder = '100,000';
+            }
+
+            // 2. Calculate Percentage
+            let progressPercent = 0;
+            if (targetGoal > 0) {
+                const currentSaved = Math.max(0, globalBalance); 
+                progressPercent = Math.min(100, (currentSaved / targetGoal) * 100);
+            }
+            
+            // 3. Update Progress Bar
+            goalProgressPercent.innerText = `${Math.round(progressPercent)}%`;
+            goalProgressBar.style.width = `${progressPercent}%`;
+
+            // 4. Set color based on progress (Green for completion, Teal for ongoing)
+            if (progressPercent >= 100) {
+                goalProgressBar.style.backgroundColor = '#48BB78'; // Green-500
+                goalProgressPercent.classList.remove('accent-color');
+                goalProgressPercent.style.color = '#48BB78';
+            } else {
+                goalProgressBar.style.backgroundColor = '#20C997'; // Teal Accent
+                goalProgressPercent.classList.add('accent-color');
+                goalProgressPercent.style.color = '#20C997'; // Ensure color is applied if class is added
+            }
+        }
+
+        // Filter Dropdown Setup
+        function setupFilters() {
+            // Set default date for picker
+            dateFilter.value = currentDate; 
+
+            // Setup Month Filter
+            monthFilter.innerHTML = monthNames.map((name, index) => 
+                `<option value="${index}" ${index === currentMonth ? 'selected' : ''}>${name}</option>`
+            ).join('');
+
+            // Setup Year Filter (Expanded Range: 2020 - 2030)
+            const startYear = 2020;
+            const endYear = 2030;
+            const years = [];
+            for (let y = endYear; y >= startYear; y--) {
+                years.push(y);
+            }
+            yearFilter.innerHTML = years.map(year => 
+                `<option value="${year}" ${year === currentYear ? 'selected' : ''}>${year + 543} (ปี)</option>`
+            ).join('');
+        }
+        
+        // Add Transaction
+        function addTransaction(e) {
+            e.preventDefault();
+            if (textInput.value.trim() === '' || amountInput.value.trim() === '') {
+                alert('กรุณากรอกข้อมูลให้ครบ');
+                return;
+            }
+
+            const amountValue = parseFloat(amountInput.value);
+            const finalAmount = currentType === 'expense' ? -amountValue : amountValue;
+            const date = new Date();
+
+            const transaction = {
+                id: Date.now(),
+                text: textInput.value,
+                amount: finalAmount,
+                date: date.toISOString().split('T')[0], // YYYY-MM-DD
+                displayDate: date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }) 
+            };
+
+            transactions.push(transaction);
+
+            updateLocalStorage();
+            
+            updateGlobalSummary();
+            updateGoalProgress();
+            filterAndDisplayTransactions(); 
+
+            // Reset Form
+            textInput.value = '';
+            amountInput.value = '';
+            setTransactionType('expense'); // Reset to default
+            textInput.focus();
+        }
+        
+        // Update Summary Calculations (Generic Function)
+        function updateSummary(targetBalanceEl, targetIncomeEl, targetExpenseEl, list) {
+             const amounts = list.map(t => t.amount);
+            
+            const total = amounts.reduce((acc, item) => (acc += item), 0);
+            const income = amounts.filter(item => item > 0).reduce((acc, item) => (acc += item), 0);
+            const expense = (amounts.filter(item => item < 0).reduce((acc, item) => (acc += item), 0) * -1);
+
+            // Apply accent color only to the filtered balance element
+            targetBalanceEl.innerHTML = `฿<span class="text-white">${formatCurrency(total)}</span>`;
+            
+            targetIncomeEl.innerText = `+฿${formatCurrency(income)}`;
+            targetExpenseEl.innerText = `-฿${formatCurrency(expense)}`;
+        }
+
+        // Update Global Summary
+        function updateGlobalSummary() {
+            // Note: Global balance element update is handled in updateGoalProgress()
+            const amounts = transactions.map(t => t.amount);
+            const income = amounts.filter(item => item > 0).reduce((acc, item) => (acc += item), 0);
+            const expense = (amounts.filter(item => item < 0).reduce((acc, item) => (acc += item), 0) * -1);
+
+            globalIncomeEl.innerText = `+฿${formatCurrency(income)}`;
+            globalExpenseEl.innerText = `-฿${formatCurrency(expense)}`;
+        }
+
+        // Filter Mode Toggle (Day/Month)
+        function setFilterMode(mode) {
+            filterMode = mode;
+
+            // Update Button Styles
+            const activeClass = 'filter-btn-active';
+            const inactiveClass = 'text-gray-600';
+
+            if (mode === 'day') {
+                filterDailyBtn.classList.add(activeClass);
+                filterDailyBtn.classList.remove(inactiveClass);
+                filterMonthlyBtn.classList.remove(activeClass);
+                filterMonthlyBtn.classList.add(inactiveClass);
+                
+                dateFilterGroup.classList.remove('hidden');
+                monthlyFilterGroup.classList.add('hidden');
+            } else { // month
+                filterMonthlyBtn.classList.add(activeClass);
+                filterMonthlyBtn.classList.remove(inactiveClass);
+                filterDailyBtn.classList.remove(activeClass);
+                filterDailyBtn.classList.add(inactiveClass);
+
+                monthlyFilterGroup.classList.remove('hidden');
+                dateFilterGroup.classList.add('hidden');
+            }
+            filterAndDisplayTransactions();
+        }
+
+
+        // Filter Transactions and Display (Main Logic)
+        function filterAndDisplayTransactions() {
+            let filteredTransactions = [];
+            let title = '';
+
+            if (filterMode === 'day') {
+                filteredTransactions = transactions.filter(t => t.date === currentDate);
+                
+                const dateParts = currentDate.split('-');
+                const dateObj = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+                const displayDate = dateObj.toLocaleDateString('th-TH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                title = `สรุปยอดของ ${displayDate}`;
+                
+            } else { 
+                filteredTransactions = transactions.filter(t => {
+                    const transactionDate = new Date(t.date);
+                    return transactionDate.getMonth() === currentMonth && transactionDate.getFullYear() === currentYear;
+                });
+                title = `สรุปยอดของเดือน ${monthNames[currentMonth]} ${currentYear + 543}`;
+            }
+
+            // 5.1 Update Filtered Summary
+            filteredTitleEl.innerText = title;
+            updateSummary(filteredBalanceEl, filteredIncomeEl, filteredExpenseEl, filteredTransactions);
+
+            // 5.2 Display Filtered List
+            listEl.innerHTML = '';
+            if (filteredTransactions.length === 0) {
+                emptyMsgEl.style.display = 'flex';
+            } else {
+                emptyMsgEl.style.display = 'none';
+                filteredTransactions
+                    .sort((a,b) => b.id - a.id)
+                    .forEach(addTransactionDOM);
+            }
+        }
+        
+        // Add Transaction to Filtered DOM List
+        function addTransactionDOM(transaction) {
+            const sign = transaction.amount < 0 ? '-' : '+';
+            const isExpense = transaction.amount < 0;
+            const colorClass = isExpense ? 'text-red-600' : 'text-green-600';
+            const borderClass = isExpense ? 'border-red-500/30' : 'border-green-500/30';
+
+            const item = document.createElement('li');
+            item.className = `apple-card p-4 flex justify-between items-center relative border ${borderClass} hover:shadow-lg transition-all`;
+
+            item.innerHTML = `
+                <div class="flex items-center min-w-0">
+                    <span class="text-xs font-semibold text-gray-400 mr-4">${transaction.displayDate}</span>
+                    <h4 class="font-medium text-gray-700 text-base truncate">${transaction.text}</h4>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="font-bold ${colorClass} text-lg block min-w-[120px] text-right">
+                        ${sign}฿${formatCurrency(Math.abs(transaction.amount))}
+                    </span>
+                    <button class="delete-btn text-gray-400 hover:text-red-500 transition-colors ml-2 active:scale-[0.98]" onclick="removeTransaction(${transaction.id})">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+                    </button>
+                </div>
+            `;
+
+            listEl.appendChild(item);
+        }
+
+        // Remove Transaction
+        function removeTransaction(id) {
+            if(confirm('ยืนยันการลบรายการนี้?')) {
+                transactions = transactions.filter(transaction => transaction.id !== id);
+                updateLocalStorage();
+                init(); 
+            }
+        }
+
+        // Update local storage transactions
+        function updateLocalStorage() {
+            localStorage.setItem('transactions', JSON.stringify(transactions));
+        }
+
+        // UI for Income/Expense Toggle
+        function setTransactionType(type) {
+            currentType = type;
+            const incomeClasses = ['bg-green-600', 'text-white', 'shadow-md', 'shadow-green-300/60'];
+            const expenseClasses = ['bg-red-600', 'text-white', 'shadow-md', 'shadow-red-300/60'];
+            const inactiveClasses = ['bg-transparent', 'text-gray-600', 'hover:bg-gray-200', 'shadow-none'];
+
+            const applyClasses = (element, add, remove) => {
+                element.classList.add(...add);
+                element.classList.remove(...remove);
+            };
+
+            if (type === 'income') {
+                applyClasses(btnIncome, incomeClasses, expenseClasses.concat(inactiveClasses));
+                applyClasses(btnExpense, inactiveClasses, incomeClasses.concat(expenseClasses));
+            } else {
+                applyClasses(btnExpense, expenseClasses, incomeClasses.concat(inactiveClasses));
+                applyClasses(btnIncome, inactiveClasses, incomeClasses.concat(expenseClasses));
+            }
+        }
+
+        // Initialization
+        function init() {
+            setupFilters();
+            updateGlobalSummary();
+            updateGoalProgress();
+            setFilterMode('day'); 
+            setTransactionType('expense'); 
+        }
+
+        init();
+    </script>
+</body>
+</html>
