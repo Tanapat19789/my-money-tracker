@@ -46,12 +46,33 @@
 
     <div class="w-full max-w-6xl">
         
-        <header class="mb-8">
-            <h1 class="text-4xl font-extrabold text-gray-800 tracking-tight">💰 My Money</h1>
-            <p class="text-gray-500 mt-1">บันทึกการเงินส่วนตัว และดูข้อมูลย้อนหลัง</p>
+        <header class="mb-8 flex justify-between items-center">
+            <div>
+                <h1 class="text-4xl font-extrabold text-gray-800 tracking-tight">💰 My Money</h1>
+                <p class="text-gray-500 mt-1">บันทึกการเงินส่วนตัว (User: <span id="current-user-display" class="font-semibold text-indigo-600">Guest</span>)</p>
+            </div>
+             <button id="logout-btn" class="hidden text-sm font-semibold text-red-500 py-2 px-4 rounded-lg border border-red-300 hover:bg-red-50 transition-colors active:scale-[0.98]">ออกจากระบบ</button>
         </header>
+        
+        <div id="login-view" class="flex justify-center items-center py-20">
+            <div class="apple-card p-8 w-full max-w-md">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center" id="auth-title">เข้าสู่ระบบ / ลงทะเบียน</h2>
+                <form id="auth-form">
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-gray-600 mb-1">ชื่อผู้ใช้ (Username)</label>
+                        <input type="text" id="username-input" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-700 font-normal" placeholder="กรอกชื่อผู้ใช้ที่ไม่ซ้ำกัน" required>
+                    </div>
+                    
+                    <p class="text-sm text-gray-500 mb-6">ระบบจะสร้างบัญชีใหม่ให้ หาก Username ที่กรอกยังไม่เคยใช้งาน</p>
+                    
+                    <button type="submit" id="login-register-btn" class="w-full apple-button purple-gradient hover:opacity-90 text-white font-semibold py-3 rounded-lg shadow-lg shadow-indigo-500/40 active:scale-[0.98]">
+                        เข้าสู่ระบบ / เริ่มต้นใช้งาน
+                    </button>
+                </form>
+            </div>
+        </div>
 
-        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <main id="app-view" class="grid grid-cols-1 lg:grid-cols-3 gap-8 hidden">
             
             <div class="lg:col-span-1 space-y-8">
                 
@@ -183,13 +204,13 @@
 
     <script>
         // --- STATE & DATA ---
-        let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
-        let targetGoal = parseFloat(localStorage.getItem('targetGoal')) || 0;
+        let currentUsername = localStorage.getItem('currentUsername') || null;
+        let transactions = [];
+        let targetGoal = 0;
         let currentType = 'expense';
         let filterMode = 'day';
         
         const now = new Date();
-        
         const pad = (num) => num.toString().padStart(2, '0');
         const defaultDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 
@@ -198,6 +219,15 @@
         let currentYear = now.getFullYear();
 
         // --- DOM ELEMENTS ---
+        // Auth/View Elements
+        const loginView = document.getElementById('login-view');
+        const appView = document.getElementById('app-view');
+        const authForm = document.getElementById('auth-form');
+        const usernameInput = document.getElementById('username-input');
+        const currentUserDisplay = document.getElementById('current-user-display');
+        const logoutBtn = document.getElementById('logout-btn');
+
+        // App Elements
         const globalBalanceEl = document.getElementById('global-balance');
         const globalIncomeEl = document.getElementById('global-income');
         const globalExpenseEl = document.getElementById('global-expense');
@@ -233,6 +263,9 @@
         const formatCurrency = (num) => `${num.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
         // --- EVENT LISTENERS ---
+        authForm.addEventListener('submit', handleAuth);
+        logoutBtn.addEventListener('click', logout);
+        
         btnIncome.addEventListener('click', () => setTransactionType('income'));
         btnExpense.addEventListener('click', () => setTransactionType('expense'));
         formEl.addEventListener('submit', addTransaction);
@@ -256,30 +289,103 @@
         filterDailyBtn.addEventListener('click', () => setFilterMode('day'));
         
 
-        // --- CORE FUNCTIONS ---
+        // --- AUTH/DATA FUNCTIONS ---
+
+        function handleAuth(e) {
+            e.preventDefault();
+            const username = usernameInput.value.trim().toLowerCase();
+            if (username.length < 3) {
+                alert('ชื่อผู้ใช้ต้องมีอย่างน้อย 3 ตัวอักษร');
+                return;
+            }
+            
+            currentUsername = username;
+            localStorage.setItem('currentUsername', currentUsername);
+            loadUserData();
+            updateUIVisibility();
+        }
+
+        function logout() {
+            if (confirm('คุณต้องการออกจากระบบหรือไม่?')) {
+                localStorage.removeItem('currentUsername');
+                currentUsername = null;
+                // Reset data
+                transactions = [];
+                targetGoal = 0;
+                updateUIVisibility();
+                alert('ออกจากระบบแล้ว');
+            }
+        }
+
+        function loadUserData() {
+            if (!currentUsername) return;
+
+            // Load transactions
+            const transactionsKey = `myMoney_transactions_${currentUsername}`;
+            const storedTransactions = localStorage.getItem(transactionsKey);
+            transactions = storedTransactions ? JSON.parse(storedTransactions) : [];
+
+            // Load target goal
+            const goalKey = `myMoney_goal_${currentUsername}`;
+            targetGoal = parseFloat(localStorage.getItem(goalKey)) || 0;
+        }
+
+        function updateLocalStorage() {
+            if (!currentUsername) return;
+
+            // Save transactions
+            const transactionsKey = `myMoney_transactions_${currentUsername}`;
+            localStorage.setItem(transactionsKey, JSON.stringify(transactions));
+
+            // Save target goal (handled by setGoal, but keep for completeness)
+            const goalKey = `myMoney_goal_${currentUsername}`;
+            localStorage.setItem(goalKey, targetGoal);
+        }
+
+        function updateUIVisibility() {
+            if (currentUsername) {
+                loginView.classList.add('hidden');
+                appView.classList.remove('hidden');
+                logoutBtn.classList.remove('hidden');
+                currentUserDisplay.innerText = currentUsername.charAt(0).toUpperCase() + currentUsername.slice(1);
+                initAppContent();
+            } else {
+                loginView.classList.remove('hidden');
+                appView.classList.add('hidden');
+                logoutBtn.classList.add('hidden');
+                currentUserDisplay.innerText = 'Guest';
+                usernameInput.value = '';
+                usernameInput.focus();
+            }
+        }
+        
+        // --- CORE APPLICATION FUNCTIONS ---
         
         // Set Savings Goal
         function setGoal() {
+            if (!currentUsername) return alert('กรุณาเข้าสู่ระบบก่อน');
+            
             const newGoal = parseFloat(targetGoalInput.value);
             if (isNaN(newGoal) || newGoal <= 0) {
                 alert('กรุณาใส่เป้าหมายที่ถูกต้อง (ต้องมากกว่า 0)');
                 return;
             }
             targetGoal = newGoal;
-            localStorage.setItem('targetGoal', targetGoal);
+            updateLocalStorage(); // Save goal to user's storage
             targetGoalInput.value = ''; 
             updateGoalProgress();
             targetGoalInput.placeholder = formatCurrency(targetGoal);
-            alert(`ตั้งค่าเป้าหมายสำเร็จ: ฿${formatCurrency(targetGoal)}`);
+            alert(`ตั้งค่าเป้าหมายสำเร็จสำหรับ ${currentUsername}: ฿${formatCurrency(targetGoal)}`);
         }
 
         // Update Goal Progress UI
         function updateGoalProgress() {
             const globalBalance = transactions.map(t => t.amount).reduce((acc, item) => (acc += item), 0);
             
-            // 1. Update Goal Text & Input Placeholder
+            // 1. Update Global Balance Display
             globalBalanceEl.innerText = `฿${formatCurrency(globalBalance)}`;
 
+            // 2. Update Goal Text & Input Placeholder
             if (targetGoal > 0) {
                 goalStatusText.innerHTML = `ยอดเงินปัจจุบัน: ฿${formatCurrency(globalBalance)} <span class="text-white/60">/ เป้าหมาย: ฿${formatCurrency(targetGoal)}</span>`;
                 targetGoalInput.placeholder = formatCurrency(targetGoal);
@@ -288,18 +394,18 @@
                 targetGoalInput.placeholder = '100,000';
             }
 
-            // 2. Calculate Percentage
+            // 3. Calculate Percentage
             let progressPercent = 0;
             if (targetGoal > 0) {
                 const currentSaved = Math.max(0, globalBalance); 
                 progressPercent = Math.min(100, (currentSaved / targetGoal) * 100);
             }
             
-            // 3. Update Progress Bar
+            // 4. Update Progress Bar
             goalProgressPercent.innerText = `${Math.round(progressPercent)}%`;
             goalProgressBar.style.width = `${progressPercent}%`;
 
-            // 4. Set color based on progress (Green for completion, Teal for ongoing)
+            // 5. Set color based on progress (Green for completion, Teal for ongoing)
             if (progressPercent >= 100) {
                 goalProgressBar.style.backgroundColor = '#48BB78'; // Green-500
                 goalProgressPercent.classList.remove('accent-color');
@@ -307,13 +413,12 @@
             } else {
                 goalProgressBar.style.backgroundColor = '#20C997'; // Teal Accent
                 goalProgressPercent.classList.add('accent-color');
-                goalProgressPercent.style.color = '#20C997'; // Ensure color is applied if class is added
+                goalProgressPercent.style.color = '#20C997'; 
             }
         }
 
         // Filter Dropdown Setup
         function setupFilters() {
-            // Set default date for picker
             dateFilter.value = currentDate; 
 
             // Setup Month Filter
@@ -336,6 +441,7 @@
         // Add Transaction
         function addTransaction(e) {
             e.preventDefault();
+            if (!currentUsername) return alert('กรุณาเข้าสู่ระบบก่อน');
             if (textInput.value.trim() === '' || amountInput.value.trim() === '') {
                 alert('กรุณากรอกข้อมูลให้ครบ');
                 return;
@@ -364,7 +470,7 @@
             // Reset Form
             textInput.value = '';
             amountInput.value = '';
-            setTransactionType('expense'); // Reset to default
+            setTransactionType('expense');
             textInput.focus();
         }
         
@@ -385,7 +491,6 @@
 
         // Update Global Summary
         function updateGlobalSummary() {
-            // Note: Global balance element update is handled in updateGoalProgress()
             const amounts = transactions.map(t => t.amount);
             const income = amounts.filter(item => item > 0).reduce((acc, item) => (acc += item), 0);
             const expense = (amounts.filter(item => item < 0).reduce((acc, item) => (acc += item), 0) * -1);
@@ -425,6 +530,8 @@
 
         // Filter Transactions and Display (Main Logic)
         function filterAndDisplayTransactions() {
+            if (!currentUsername) return; 
+
             let filteredTransactions = [];
             let title = '';
 
@@ -490,16 +597,12 @@
 
         // Remove Transaction
         function removeTransaction(id) {
+            if (!currentUsername) return alert('กรุณาเข้าสู่ระบบก่อน');
             if(confirm('ยืนยันการลบรายการนี้?')) {
                 transactions = transactions.filter(transaction => transaction.id !== id);
                 updateLocalStorage();
-                init(); 
+                initAppContent(); 
             }
-        }
-
-        // Update local storage transactions
-        function updateLocalStorage() {
-            localStorage.setItem('transactions', JSON.stringify(transactions));
         }
 
         // UI for Income/Expense Toggle
@@ -522,14 +625,23 @@
                 applyClasses(btnIncome, inactiveClasses, incomeClasses.concat(expenseClasses));
             }
         }
-
-        // Initialization
-        function init() {
+        
+        // --- INITIALIZATION ---
+        
+        function initAppContent() {
             setupFilters();
             updateGlobalSummary();
             updateGoalProgress();
             setFilterMode('day'); 
             setTransactionType('expense'); 
+        }
+
+        function init() {
+            // Check if user is already logged in on page load
+            if (currentUsername) {
+                loadUserData();
+            }
+            updateUIVisibility();
         }
 
         init();
